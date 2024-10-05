@@ -50,7 +50,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
 app.post('/delete', (req, res) => {
     const { filename, password } = req.body;
 
-    if (password !== 'wangwang') {
+    if (password !== 'del5678') {
         return res.status(403).send('密碼錯誤');
     }
 
