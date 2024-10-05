@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>upload,download</title>
+    <style>
+        @font-face {
+            font-family: 'Iansui';
+            src: url('./Iansui-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        body {
+            font-family: 'Iansui', serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        
+        h1,
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 10px 0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            /* 垂直和水平居中 */
+            padding: 20px;
+            border: 1px solid #ccc;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        li {
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        input[type="file"],
+        input[type="text"],
+        input[type="password"],
+        select,
+        button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+            width: 100%;
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+        
+        form {
+            margin: 20px 0;
+        }
+        
+        progress {
+            width: 100%;
+            margin-top: 10px;
+            max-width: 400px;
+        }
+        
+        select {
+            width: 120px;
+        }
+        
+        #update {
+            width: 200px;
+        }
+        
+        #file-input {
+            padding-left: 100px;
+        }
+        
+        @media (max-width: 767px) {
+            .modal-content {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1><br>upload,download</h1>
+    <center>
+        <button id="openFilesModal">查看公開檔案</button>
+    </center>
+    <br><br>
+
+
+    <div id="filesModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeFilesModal">&times;</span>
+            <h2>公開檔案</h2>
+            <ul id="file-list"></ul>
+        </div>
+    </div>
+    <!-- 上傳檔案 -->
+    <h2>上傳檔案</h2>
+    <center>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" name="file" required id="file-input">
+            <br>
+            <select name="uploadType">
+            <option value="public">公開上傳</option>
+            <option value="private">私人上傳</option>
+        </select>
+            <button type="submit" id="update">上傳</button>
+            <progress id="progress-bar" value="0" max="100" style="display: none;"></progress>
+        </form>
+    </center>
+    <br><br>
+    <center>
+        <button id="openDeleteModal">刪除檔案</button>
+    </center>
+
+    <center>
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <span class="close" id="closeDeleteModal">&times;</span>
+                <h2>刪除檔案</h2>
+                <form id="delete-form">
+                    <input type="text" name="filename" placeholder="檔案名稱" required />
+                    <input type="password" name="password" placeholder="密碼" required />
+                    <button type="submit">刪除</button>
+                </form>
+            </div>
+        </div>
+    </center>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async() => {
+            const response = await fetch('/files');
+            const files = await response.json();
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = files.map(file => `<li><a href="/download/${file}">${file}</a></li>`).join('');
+        });
+
+        const filesModal = document.getElementById('filesModal');
+        const openFilesModal = document.getElementById('openFilesModal');
+        const closeFilesModal = document.getElementById('closeFilesModal');
+
+        openFilesModal.onclick = function() {
+            filesModal.style.display = 'block';
+        }
+
+        closeFilesModal.onclick = function() {
+            filesModal.style.display = 'none';
+        }
+
+        const deleteModal = document.getElementById('deleteModal');
+        const openDeleteModal = document.getElementById('openDeleteModal');
+        const closeDeleteModal = document.getElementById('closeDeleteModal');
+
+        openDeleteModal.onclick = function() {
+            deleteModal.style.display = 'block';
+        }
+
+        closeDeleteModal.onclick = function() {
+            deleteModal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target == filesModal) {
+                filesModal.style.display = 'none';
+            }
+            if (event.target == deleteModal) {
+                deleteModal.style.display = 'none';
+            }
+        }
+
+        document.getElementById('upload-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.display = 'block';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progressBar.value = percentComplete;
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    alert('檔案上傳成功！');
+                    window.location.reload();
+                } else {
+                    alert('上傳失敗');
+                }
+                progressBar.style.display = 'none';
+            };
+
+            xhr.send(formData);
+        });
+
+        document.getElementById('delete-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new URLSearchParams(new FormData(this));
+
+            const response = await fetch('/delete', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+
+            if (response.ok) {
+                alert('檔案已刪除！');
+                window.location.reload();
+            } else {
+                alert('刪除失敗或密碼錯誤');
+            }
+        });
+    </script>
+
+</body>
+
+</html>
