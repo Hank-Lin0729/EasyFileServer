@@ -35,7 +35,7 @@
 ### 安裝步驟
 1. clone專案到本地：
    ```
-   git clone <專案地址>
+   git clone https://github.com/Hank-Lin0729/EasyFileServer.git
    ```
 2. 進入專案目錄並安裝依賴：
    ```
