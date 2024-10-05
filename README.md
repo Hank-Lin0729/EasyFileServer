@@ -33,7 +33,7 @@
 - npm 或 yarn
 
 ### 安裝步驟
-1. clone專案到本地：
+1. clone專案：
    ```
    git clone https://github.com/Hank-Lin0729/EasyFileServer.git
    ```
